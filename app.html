@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Snake Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #111;
+      font-family: sans-serif;
+      color: #fff;
+    }
+
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #000;
+      padding: 10px 20px;
+      box-shadow: 0 2px 10px #0f0;
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header a {
+      color: #0f0;
+      text-decoration: none;
+      margin: 0 10px;
+      font-weight: bold;
+    }
+
+    header a:hover {
+      text-decoration: underline;
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      padding-top: 60px; /* space for header */
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      margin-bottom: 20px;
+      cursor: pointer;
+      background: #0f0;
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      font-weight: bold;
+      box-shadow: 0 0 10px #0f0;
+    }
+
+    button:hover {
+      background: #0c0;
+    }
+
+    canvas {
+      background: #222;
+      box-shadow: 0 0 10px #0f0;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <a href="scratch.html">Home</a>
+    </div>
+  </header>
+
+  <main>
+    <button id="startBtn">Start Game</button>
+    <canvas id="game" width="400" height="400"></canvas>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const startBtn = document.getElementById("startBtn");
+
+    const scale = 20;
+    const rows = canvas.height / scale;
+    const columns = canvas.width / scale;
+
+    let snake;
+    let fruit;
+    let gameInterval;
+
+    startBtn.addEventListener("click", () => {
+      startBtn.style.display = "none";
+      canvas.style.display = "block";
+      startGame();
+    });
+
+    function startGame() {
+      snake = new Snake();
+      fruit = new Fruit();
+      fruit.pickLocation();
+
+      if (gameInterval) clearInterval(gameInterval);
+      gameInterval = window.setInterval(() => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        fruit.draw();
+        snake.update();
+        snake.draw();
+
+        if (snake.eat(fruit)) {
+          fruit.pickLocation();
+        }
+
+        snake.checkCollision();
+      }, 100);
+    }
+
+    window.addEventListener("keydown", e => {
+      const dir = e.key.replace("Arrow", "");
+      snake.changeDirection(dir);
+    });
+
+    function Snake() {
+      this.body = [{ x: 10, y: 10 }];
+      this.xSpeed = 1;
+      this.ySpeed = 0;
+      this.total = 0;
+
+      this.draw = function () {
+        ctx.fillStyle = "#0f0";
+        for (let segment of this.body) {
+          ctx.fillRect(segment.x * scale, segment.y * scale, scale - 2, scale - 2);
+        }
+      };
+
+      this.update = function () {
+        const head = { ...this.body[this.body.length - 1] };
+        head.x += this.xSpeed;
+        head.y += this.ySpeed;
+
+        this.body.push(head);
+        if (this.body.length > this.total + 1) {
+          this.body.shift();
+        }
+      };
+
+      this.changeDirection = function (direction) {
+        switch (direction) {
+          case "Up":
+            if (this.ySpeed === 0) {
+              this.xSpeed = 0;
+              this.ySpeed = -1;
+            }
+            break;
+          case "Down":
+            if (this.ySpeed === 0) {
+              this.xSpeed = 0;
+              this.ySpeed = 1;
+            }
+            break;
+          case "Left":
+            if (this.xSpeed === 0) {
+              this.xSpeed = -1;
+              this.ySpeed = 0;
+            }
+            break;
+          case "Right":
+            if (this.xSpeed === 0) {
+              this.xSpeed = 1;
+              this.ySpeed = 0;
+            }
+            break;
+        }
+      };
+
+      this.eat = function (fruit) {
+        let head = this.body[this.body.length - 1];
+        if (head.x === fruit.x && head.y === fruit.y) {
+          this.total++;
+          return true;
+        }
+        return false;
+      };
+
+      this.checkCollision = function () {
+        let head = this.body[this.body.length - 1];
+
+        if (
+          head.x < 0 || head.x >= columns ||
+          head.y < 0 || head.y >= rows
+        ) {
+          gameOver();
+        }
+
+        for (let i = 0; i < this.body.length - 1; i++) {
+          let part = this.body[i];
+          if (head.x === part.x && head.y === part.y) {
+            gameOver();
+          }
+        }
+      };
+    }
+
+    function Fruit() {
+      this.x;
+      this.y;
+
+      this.pickLocation = function () {
+        this.x = Math.floor(Math.random() * columns);
+        this.y = Math.floor(Math.random() * rows);
+      };
+
+      this.draw = function () {
+        ctx.fillStyle = "#f00";
+        ctx.fillRect(this.x * scale, this.y * scale, scale - 2, scale - 2);
+      };
+    }
+
+    function gameOver() {
+      clearInterval(gameInterval);
+      alert("Game Over!");
+      startBtn.textContent = "Restart Game";
+      startBtn.style.display = "block";
+      canvas.style.display = "none";
+    }
+  </script>
+</body>
+</html>
